@@ -14,6 +14,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { GridContainer } from '../ui/grid-container';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { LeadPriority } from '@/lib/types';
+
+const leadPriorities: LeadPriority[] = ["High", "Medium", "Low"];
 
 const FormSchema = z.object({
   rawLeadText: z.string().min(10, 'Please enter more details for the AI to process.'),
@@ -32,6 +36,7 @@ const FormSchema = z.object({
   sellerBuyerRate: z.string().optional(),
   aikyanRate: z.string().optional(),
   note: z.string().optional(),
+  priority: z.enum(["High", "Medium", "Low"]).optional(),
 });
 
 type FormData = z.infer<typeof FormSchema>;
@@ -61,6 +66,7 @@ export function LeadParserForm() {
       sellerBuyerRate: '',
       aikyanRate: '',
       note: '',
+      priority: 'Medium',
     },
   });
 
@@ -134,7 +140,7 @@ export function LeadParserForm() {
                     <Textarea
                       {...field}
                       rows={8}
-                      placeholder="e.g., SELLER WEEKLY: Copper Scrap 99% purity, 10 MT qty, ex-warehouse NY. Contact John at 123-456-7890. Rate 8000/MT..."
+                      placeholder="e.g., URGENT SELLER WEEKLY: Copper Scrap 99% purity, 1000 MT qty, ex-warehouse NY. Contact John at 123-456-7890. Rate 8000/MT..."
                       className="text-sm"
                     />
                   </FormControl>
@@ -172,6 +178,28 @@ export function LeadParserForm() {
                 <FormField name="packing" render={({ field }) => <FormItem><FormLabel>Packing</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>} />
                 <FormField name="warehouse" render={({ field }) => <FormItem><FormLabel>Warehouse</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>} />
                 <FormField name="sample" render={({ field }) => <FormItem><FormLabel>Sample</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>} />
+                <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Priority</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a priority" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {leadPriorities.map(p => (
+                              <SelectItem key={p} value={p}>{p}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 <FormField name="marketRate" render={({ field }) => <FormItem><FormLabel>Market Rate</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>} />
                 <FormField name="sellerBuyerRate" render={({ field }) => <FormItem><FormLabel>Seller/Buyer Rate</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>} />
                 <FormField name="aikyanRate" render={({ field }) => <FormItem><FormLabel>Aikyan Rate</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>} />

@@ -39,6 +39,7 @@ const ParseLeadDataOutputSchema = z.object({
   sellerBuyerRate: z.string().optional().describe('The rate offered by the seller or buyer.'),
   aikyanRate: z.string().optional().describe('The Aikyan rate.'),
   note: z.string().optional().describe('Any additional notes about the lead.'),
+  priority: z.enum(["High", "Medium", "Low"]).optional().describe("The priority of the lead. Determined by factors like quantity, urgency, or explicit priority keywords. Default to 'Medium' if unsure."),
 });
 export type ParseLeadDataOutput = z.infer<typeof ParseLeadDataOutputSchema>;
 
@@ -69,6 +70,7 @@ const prompt = ai.definePrompt({
   - sellerBuyerRate: The rate offered by the seller or buyer.
   - aikyanRate: The Aikyan rate.
   - note: Any additional notes about the lead.
+  - priority: Analyze the text for urgency, large quantities, or direct statements of priority. Classify as 'High', 'Medium', or 'Low'. If no strong signals are present, default to 'Medium'.
 
   Raw Lead Text: {{{rawLeadText}}}
   \n

@@ -2,6 +2,7 @@
 import { collection, getDocs, addDoc, query, where, getCountFromServer, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Lead, LeadStatus } from "./types";
+import { subDays } from 'date-fns';
 
 // In-memory data as a fallback
 let inMemoryLeads: Lead[] = [];
@@ -28,7 +29,10 @@ export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], is
     const leads = inMemoryLeads.filter(lead => {
         if (filter?.status && !((Array.isArray(filter.status) && filter.status.includes(lead.status)) || lead.status === filter.status)) return false;
         if (filter?.isRegular && !["WEEKLY", "MONTHLY", "1-2 M"].includes(lead.frequency || '')) return false;
-        if (filter?.needsFollowUp && lead.status !== 'Follow-up needed') return false;
+        if (filter?.needsFollowUp) {
+            const isStale = (lead.status === 'New' || lead.status === 'Negotiation') && new Date(lead.lastUpdate) < subDays(new Date(), 7);
+            if (lead.status !== 'Follow-up needed' && !isStale) return false;
+        }
         if (filter?.needsSampleUpdate && lead.status !== 'Seller to send sample') return false;
         return true;
     });
@@ -44,7 +48,10 @@ export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], is
       conditions.push(where('frequency', 'in', ["WEEKLY", "MONTHLY", "1-2 M"]));
     }
     if (filter?.needsFollowUp) {
-      conditions.push(where('status', '==', 'Follow-up needed'));
+        // This logic is complex for Firestore queries without multiple queries and merging in code.
+        // It's simpler to fetch leads with relevant statuses and then filter in memory.
+        const followUpStatuses: LeadStatus[] = ['Follow-up needed', 'New', 'Negotiation'];
+        conditions.push(where('status', 'in', followUpStatuses));
     }
     if (filter?.needsSampleUpdate) {
         conditions.push(where('status', '==', 'Seller to send sample'));
@@ -53,7 +60,16 @@ export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], is
     const q = conditions.length > 0 ? query(leadsCollection, ...conditions) : query(leadsCollection);
 
     const querySnapshot = await getDocs(q);
-    const leads = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+    let leads = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+
+    // Post-filter for complex logic like `needsFollowUp`
+    if (filter?.needsFollowUp) {
+        const sevenDaysAgo = subDays(new Date(), 7);
+        leads = leads.filter(lead => 
+            lead.status === 'Follow-up needed' || 
+            ((lead.status === 'New' || lead.status === 'Negotiation') && new Date(lead.lastUpdate) < sevenDaysAgo)
+        );
+    }
     
     // Sort in memory after fetching, as Firestore requires an index for this.
     return leads.sort((a, b) => new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime());
@@ -133,24 +149,37 @@ export async function getLeadStats() {
             total: inMemoryLeads.length, 
             negotiation: inMemoryLeads.filter(l => l.status === 'Negotiation').length, 
             regular: inMemoryLeads.filter(l => ["WEEKLY", "MONTHLY", "1-2 M"].includes(l.frequency || '')).length, 
-            dead: inMemoryLeads.filter(l => l.status === 'Dead').length 
+            dead: inMemoryLeads.filter(l => l.status === 'Dead').length,
+            statusCounts: inMemoryLeads.reduce((acc, lead) => {
+                acc[lead.status] = (acc[lead.status] || 0) + 1;
+                return acc;
+            }, {} as Record<LeadStatus, number>)
         };
     }
     try {
-        const totalSnapshot = await getCountFromServer(query(leadsCollection));
-        const negotiationSnapshot = await getCountFromServer(query(leadsCollection, where('status', '==', 'Negotiation')));
-        const deadSnapshot = await getCountFromServer(query(leadsCollection, where('status', '==', 'Dead')));
-        const regularSnapshot = await getCountFromServer(query(leadsCollection, where('frequency', 'in', ["WEEKLY", "MONTHLY", "1-2 M"])));
+        const allLeads = await getLeads();
+        const statusCounts = allLeads.reduce((acc, lead) => {
+            acc[lead.status] = (acc[lead.status] || 0) + 1;
+            return acc;
+        }, {} as Record<LeadStatus, number>);
+
+
+        const total = allLeads.length;
+        const negotiation = statusCounts['Negotiation'] || 0;
+        const dead = statusCounts['Dead'] || 0;
+        const regular = allLeads.filter(l => ["WEEKLY", "MONTHLY", "1-2 M"].includes(l.frequency || '')).length;
         
         return { 
-            total: totalSnapshot.data().count, 
-            negotiation: negotiationSnapshot.data().count, 
-            regular: regularSnapshot.data().count, 
-            dead: deadSnapshot.data().count 
+            total, 
+            negotiation, 
+            regular, 
+            dead,
+            statusCounts,
         };
     } catch (error) {
         handleFirestoreError(error, 'getLeadStats');
-        return getLeadStats();
+        // Fallback to in-memory stats
+        return { total: 0, negotiation: 0, regular: 0, dead: 0, statusCounts: {} };
     }
 }
 

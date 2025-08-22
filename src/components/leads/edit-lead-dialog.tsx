@@ -14,10 +14,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { GridContainer } from '../ui/grid-container';
-import type { Lead, LeadStatus } from '@/lib/types';
+import type { Lead, LeadStatus, LeadPriority } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const leadStatuses: LeadStatus[] = ["New", "Negotiation", "Dead", "Regular", "Follow-up needed", "GC Sent", "Visit", "Seller to send sample"];
+const leadPriorities: LeadPriority[] = ["High", "Medium", "Low"];
 
 const FormSchema = z.object({
   id: z.string(),
@@ -37,6 +38,7 @@ const FormSchema = z.object({
   aikyanRate: z.string().optional(),
   note: z.string().optional(),
   status: z.string().optional(),
+  priority: z.enum(["High", "Medium", "Low"]).optional(),
 });
 
 type FormData = z.infer<typeof FormSchema>;
@@ -75,6 +77,7 @@ export function EditLeadDialog({ lead, isOpen, onClose }: EditLeadDialogProps) {
         aikyanRate: lead.aikyanRate || '',
         note: lead.note || '',
         status: lead.status || '',
+        priority: lead.priority || 'Medium',
       });
     }
   }, [lead, form]);
@@ -138,6 +141,28 @@ export function EditLeadDialog({ lead, isOpen, onClose }: EditLeadDialogProps) {
                           <SelectContent>
                             {leadStatuses.map(status => (
                               <SelectItem key={status} value={status}>{status}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Priority</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a priority" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {leadPriorities.map(p => (
+                              <SelectItem key={p} value={p}>{p}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

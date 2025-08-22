@@ -24,6 +24,7 @@ const LeadFormSchema = z.object({
   aikyanRate: z.string().optional(),
   note: z.string().optional(),
   status: z.string().optional(),
+  priority: z.enum(["High", "Medium", "Low"]).optional(),
 });
 
 type LeadFormData = z.infer<typeof LeadFormSchema>;
@@ -53,7 +54,7 @@ export async function createLeadAction(formData: LeadFormData) {
     const newLead = await addLead(leadToSave);
     
     revalidatePath('/');
-    revalidatePath('/leads');
+    revalidatePath('/leads', 'layout');
     
     return { success: true, lead: newLead };
   } catch (error) {

@@ -1,9 +1,10 @@
 'use client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Lead } from "@/lib/types";
+import type { Lead, LeadPriority } from "@/lib/types";
 import { LeadsTableRowActions } from "./leads-table-row-actions";
 import { LeadsTableProvider } from "./leads-table-context";
+import { cn } from "@/lib/utils";
 
 function format(date: string | undefined | null, options?: Intl.DateTimeFormatOptions) {
   if (!date) return 'N/A';
@@ -14,6 +15,13 @@ function format(date: string | undefined | null, options?: Intl.DateTimeFormatOp
     ...options,
   });
 }
+
+const priorityVariant: Record<LeadPriority, "destructive" | "secondary" | "default"> = {
+    High: "destructive",
+    Medium: "secondary",
+    Low: "default",
+}
+
 
 function LeadsTableComponent({ leads }: { leads: Lead[] }) {
   if (leads.length === 0) {
@@ -50,9 +58,16 @@ function LeadsTableComponent({ leads }: { leads: Lead[] }) {
                   <div className="text-xs text-muted-foreground">{lead.qty} / {lead.purity}</div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={lead.status === 'Dead' ? 'destructive' : lead.status === 'Negotiation' ? 'secondary' : 'default'} className="capitalize">
-                    {lead.status}
-                  </Badge>
+                    <div className="flex flex-col gap-1.5">
+                        <Badge variant={lead.status === 'Dead' ? 'destructive' : lead.status === 'Negotiation' ? 'secondary' : 'default'} className="capitalize">
+                            {lead.status}
+                        </Badge>
+                        {lead.priority && (
+                            <Badge variant={priorityVariant[lead.priority] || 'default'} className="capitalize w-fit">
+                                {lead.priority} Priority
+                            </Badge>
+                        )}
+                    </div>
                 </TableCell>
                 <TableCell>{format(lead.lastUpdate)}</TableCell>
                 <TableCell className="text-right">

@@ -4,6 +4,8 @@ export type LeadStatus = "New" | "Negotiation" | "Dead" | "Regular" | "Follow-up
 
 export type SampleStatus = "Sent" | "Received" | "Tested" | "Approved" | "Rejected";
 
+export type LeadPriority = "High" | "Medium" | "Low";
+
 export interface Lead extends ParseLeadDataOutput {
   id: string;
   leadNo: string;
@@ -12,4 +14,5 @@ export interface Lead extends ParseLeadDataOutput {
   sampleStatus?: SampleStatus;
   gcImage?: string;
   clipboard?: string;
+  priority?: LeadPriority;
 }

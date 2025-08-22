@@ -1,11 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClipboardList, Workflow, Repeat, Archive } from "lucide-react";
+import type { LeadStatus } from "@/lib/types";
 
 type LeadStatsData = {
     total: number;
     negotiation: number;
     regular: number;
     dead: number;
+    statusCounts: Record<LeadStatus, number>;
 }
 
 export function LeadStats({ stats }: { stats: LeadStatsData }) {
