@@ -1,5 +1,5 @@
 
-import { collection, getDocs, addDoc, query, where, getCountFromServer, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where, getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Lead, LeadStatus, Rate, PhonebookEntry } from "./types";
 
