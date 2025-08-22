@@ -55,18 +55,6 @@ export function MainSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
-         <div className="flex items-center gap-3 p-2">
-            <Avatar className="h-9 w-9">
-              <AvatarImage src="https://placehold.co/40x40.png" alt="User" data-ai-hint="user avatar" />
-              <AvatarFallback>U</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-sidebar-foreground">User</span>
-              <span className="text-xs text-muted-foreground">user@leadflow.com</span>
-            </div>
-          </div>
-      </SidebarFooter>
     </Sidebar>
   );
 }
