@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, ClipboardList, Package, Archive, Repeat, Workflow, Settings, CheckSquare, CalendarClock, DollarSign, Contact } from 'lucide-react';
+import { Bot, ClipboardList, Archive, Repeat, Workflow, Settings, CheckSquare, CalendarClock, DollarSign, Contact } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -9,10 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Button } from '../ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 const menuItems = [
   { href: '/', label: 'AI Ingestion', icon: Bot },
@@ -34,7 +31,7 @@ export function MainSidebar() {
     <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader>
         <Link href="/" className="flex items-center gap-2">
-          <Package className="w-8 h-8 text-primary" />
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-primary"><path d="M12.22 2h-4.44l-2 10h-2l-2 10h20l-2-10h-2l-2-10z"></path><path d="M12 2l2 10h-4l2-10z"></path></svg>
           <span className="text-lg font-semibold text-sidebar-foreground">LeadFlow</span>
         </Link>
       </SidebarHeader>
