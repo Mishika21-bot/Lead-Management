@@ -6,6 +6,14 @@ const leadsCollection = collection(db, 'leads');
 const ratesCollection = collection(db, 'rates');
 const phonebookCollection = collection(db, 'phonebook');
 
+function handleFirestoreError(error: any, context: string) {
+    console.error(`Error in ${context}:`, error);
+    if (error.code === 'permission-denied') {
+        throw new Error(`Firebase permission denied in ${context}. Please check your Firestore security rules in the Firebase console and ensure they are deployed correctly.`);
+    }
+    throw new Error(`An unexpected Firestore error occurred in ${context}: ${error.message}`);
+}
+
 
 export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], isRegular?: boolean, needsFollowUp?: boolean, needsSampleUpdate?: boolean }): Promise<Lead[]> {
   try {
@@ -42,37 +50,41 @@ export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], is
     const leads = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
     return leads;
   } catch (error) {
-    console.error("Error fetching leads:", error);
-    return [];
+    handleFirestoreError(error, 'getLeads');
+    return []; // Return empty array as a fallback
   }
 }
 
 export async function addLead(leadData: Omit<Lead, 'id' | 'leadNo' | 'lastUpdate'>): Promise<Lead> {
-    const countSnapshot = await getCountFromServer(leadsCollection);
-    const leadCount = countSnapshot.data().count;
+    try {
+        const countSnapshot = await getCountFromServer(leadsCollection);
+        const leadCount = countSnapshot.data().count;
 
-    const newLeadData = {
-        ...leadData,
-        leadNo: `L-${(leadCount + 1).toString().padStart(3, '0')}`,
-        lastUpdate: new Date().toISOString(),
-    };
+        const newLeadData = {
+            ...leadData,
+            leadNo: `L-${(leadCount + 1).toString().padStart(3, '0')}`,
+            lastUpdate: new Date().toISOString(),
+        };
 
-    const docRef = await addDoc(leadsCollection, newLeadData);
-    
-    // Also add to phonebook if not already there
-    if (newLeadData.sellerBuyerName && newLeadData.sellerBuyerContact) {
-        const phonebookQuery = query(phonebookCollection, where('contact', '==', newLeadData.sellerBuyerContact));
-        const phonebookSnapshot = await getDocs(phonebookQuery);
-        if(phonebookSnapshot.empty) {
-            addPhonebookEntry({
-                name: newLeadData.sellerBuyerName,
-                contact: newLeadData.sellerBuyerContact,
-                company: newLeadData.sellerBuyerName,
-            })
+        const docRef = await addDoc(leadsCollection, newLeadData);
+        
+        if (newLeadData.sellerBuyerName && newLeadData.sellerBuyerContact) {
+            const phonebookQuery = query(phonebookCollection, where('contact', '==', newLeadData.sellerBuyerContact));
+            const phonebookSnapshot = await getDocs(phonebookQuery);
+            if(phonebookSnapshot.empty) {
+                addPhonebookEntry({
+                    name: newLeadData.sellerBuyerName,
+                    contact: newLeadData.sellerBuyerContact,
+                    company: newLeadData.sellerBuyerName,
+                })
+            }
         }
-    }
 
-    return { id: docRef.id, ...newLeadData } as Lead;
+        return { id: docRef.id, ...newLeadData } as Lead;
+    } catch (error) {
+        handleFirestoreError(error, 'addLead');
+        throw error; // Re-throw to be handled by the action
+    }
 }
 
 export async function getLeadStats() {
@@ -89,7 +101,7 @@ export async function getLeadStats() {
             dead: deadSnapshot.data().count 
         };
     } catch (error) {
-        console.error("Error fetching lead stats:", error);
+        handleFirestoreError(error, 'getLeadStats');
         return { total: 0, negotiation: 0, regular: 0, dead: 0 };
     }
 }
@@ -111,7 +123,7 @@ export async function getLeadsByType() {
             { name: 'Other', value: other, fill: 'hsl(var(--chart-5))' },
         ];
     } catch (error) {
-        console.error("Error fetching leads by type:", error);
+        handleFirestoreError(error, 'getLeadsByType');
         return [
             { name: 'Buyers', value: 0, fill: 'hsl(var(--chart-1))' },
             { name: 'Sellers', value: 0, fill: 'hsl(var(--chart-2))' },
@@ -126,7 +138,7 @@ export async function getRates(): Promise<Rate[]> {
         const querySnapshot = await getDocs(ratesCollection);
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Rate));
     } catch (error) {
-        console.error("Error fetching rates:", error);
+        handleFirestoreError(error, 'getRates');
         return [];
     }
 }
@@ -137,12 +149,17 @@ export async function getPhonebookEntries(): Promise<PhonebookEntry[]> {
         const querySnapshot = await getDocs(phonebookCollection);
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PhonebookEntry));
     } catch (error) {
-        console.error("Error fetching phonebook entries:", error);
+        handleFirestoreError(error, 'getPhonebookEntries');
         return [];
     }
 }
 
 export async function addPhonebookEntry(entry: Omit<PhonebookEntry, 'id'>): Promise<PhonebookEntry> {
-    const docRef = await addDoc(phonebookCollection, entry);
-    return { id: docRef.id, ...entry };
+    try {
+        const docRef = await addDoc(phonebookCollection, entry);
+        return { id: docRef.id, ...entry };
+    } catch(error) {
+        handleFirestoreError(error, 'addPhonebookEntry');
+        throw error;
+    }
 }
