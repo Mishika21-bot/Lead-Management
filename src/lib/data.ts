@@ -15,9 +15,9 @@ const phonebookCollection = collection(db, 'phonebook');
 
 function handleFirestoreError(error: any, context: string) {
     console.error(`Error in ${context}:`, error);
-    if (error.code === 'permission-denied' || error.code === 'unimplemented' || error.code === 'not-found') {
+    if (error.code === 'permission-denied' || error.code === 'unimplemented' || error.code === 'not-found' || error.code === 'failed-precondition') {
         if (!isFirestoreDisabled) {
-            console.warn(`Firebase permission denied or Firestore not set up in ${context}. Switching to in-memory data fallback. Please ensure your Firestore database is created and security rules are deployed correctly by running 'firebase deploy --only firestore'.`);
+            console.warn(`Firebase permission denied or Firestore not set up in ${context}. Switching to in-memory data fallback. Please ensure your Firestore database is created, security rules are deployed, and any required indexes are created. Error: ${error.message}`);
             isFirestoreDisabled = true;
         }
     } else {
@@ -38,8 +38,6 @@ export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], is
     }).sort((a, b) => new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime());
   }
   try {
-    let q = query(leadsCollection, orderBy('lastUpdate', 'desc'));
-    
     const conditions: any[] = [];
 
     if (filter?.status) {
@@ -63,13 +61,13 @@ export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], is
       conditions.push(where('status', '==', 'Seller to send sample'));
     }
     
-    if(conditions.length > 0) {
-      q = query(leadsCollection, ...conditions, orderBy('lastUpdate', 'desc'));
-    }
+    const q = conditions.length > 0 ? query(leadsCollection, ...conditions) : query(leadsCollection);
 
     const querySnapshot = await getDocs(q);
     const leads = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
-    return leads;
+    
+    // Sort in memory after fetching
+    return leads.sort((a, b) => new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime());
   } catch (error) {
     handleFirestoreError(error, 'getLeads');
     // After handling the error, isFirestoreDisabled might be true, so we return the in-memory fallback.
