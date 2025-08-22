@@ -1,3 +1,4 @@
+
 import { collection, getDocs, addDoc, query, where, getCountFromServer, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Lead, LeadStatus, Rate, PhonebookEntry } from "./types";
@@ -221,3 +222,4 @@ export async function addPhonebookEntry(entry: Omit<PhonebookEntry, 'id'>): Prom
         return newEntry;
     }
 }
+    
