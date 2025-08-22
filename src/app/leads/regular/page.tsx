@@ -1,0 +1,34 @@
+import { getLeads } from "@/lib/data";
+import { LeadsTable } from "@/components/leads/leads-table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Repeat } from "lucide-react";
+
+export const dynamic = 'force-dynamic';
+
+export default async function RegularLeadsPage() {
+  const leads = await getLeads({ isRegular: true });
+
+  return (
+    <>
+      <header className="border-b bg-card p-4">
+        <h1 className="text-xl font-semibold flex items-center gap-2">
+            <Repeat className="h-6 w-6 text-primary" />
+            Regular Leads
+        </h1>
+        <p className="text-muted-foreground text-sm mt-1">
+            Leads marked with a recurring frequency (Weekly, Monthly, etc.).
+        </p>
+      </header>
+      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>Recurring Lead List</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <LeadsTable leads={leads} />
+            </CardContent>
+        </Card>
+      </div>
+    </>
+  );
+}
