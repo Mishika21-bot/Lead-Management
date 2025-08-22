@@ -34,7 +34,7 @@ export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], is
         if (filter?.needsFollowUp && lead.status !== 'Follow-up needed') return false;
         if (filter?.needsSampleUpdate && lead.status !== 'Seller to send sample') return false;
         return true;
-    });
+    }).sort((a, b) => new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime());
   }
   try {
     let q = query(leadsCollection, orderBy('lastUpdate', 'desc'));
@@ -71,7 +71,8 @@ export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], is
     return leads;
   } catch (error) {
     handleFirestoreError(error, 'getLeads');
-    return []; // Return empty array as a fallback
+    // After handling the error, isFirestoreDisabled might be true, so we return the in-memory fallback.
+    return getLeads(filter);
   }
 }
 
@@ -144,7 +145,7 @@ export async function getLeadStats() {
         };
     } catch (error) {
         handleFirestoreError(error, 'getLeadStats');
-        return { total: 0, negotiation: 0, regular: 0, dead: 0 };
+        return getLeadStats();
     }
 }
 
@@ -176,11 +177,7 @@ export async function getLeadsByType() {
         ];
     } catch (error) {
         handleFirestoreError(error, 'getLeadsByType');
-        return [
-            { name: 'Buyers', value: 0, fill: 'hsl(var(--chart-1))' },
-            { name: 'Sellers', value: 0, fill: 'hsl(var(--chart-2))' },
-            { name: 'Other', value: 0, fill: 'hsl(var(--chart-5))' },
-        ];
+        return getLeadsByType();
     }
 }
 
@@ -192,7 +189,7 @@ export async function getRates(): Promise<Rate[]> {
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Rate));
     } catch (error) {
         handleFirestoreError(error, 'getRates');
-        return [];
+        return getRates();
     }
 }
 
@@ -204,7 +201,7 @@ export async function getPhonebookEntries(): Promise<PhonebookEntry[]> {
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PhonebookEntry));
     } catch (error) {
         handleFirestoreError(error, 'getPhonebookEntries');
-        return [];
+        return getPhonebookEntries();
     }
 }
 
@@ -224,4 +221,3 @@ export async function addPhonebookEntry(entry: Omit<PhonebookEntry, 'id'>): Prom
         return newEntry;
     }
 }
- 
