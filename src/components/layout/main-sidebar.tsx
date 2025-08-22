@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, ClipboardList, Archive, Repeat, Workflow, Settings, CheckSquare, CalendarClock } from 'lucide-react';
+import { Bot, ClipboardList, Archive, Repeat, Workflow, Settings, CheckSquare, CalendarClock, HardDriveDownload } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -19,6 +19,7 @@ const menuItems = [
   { href: '/leads/follow-up', label: 'Follow Up', icon: CalendarClock },
   { href: '/leads/sample-updates', label: 'Sample Updates', icon: CheckSquare },
   { href: '/leads/bin', label: 'Bin', icon: Archive },
+  { href: '/export', label: 'Data Export', icon: HardDriveDownload },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 

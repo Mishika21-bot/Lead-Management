@@ -2,8 +2,9 @@
 
 import { z } from 'zod';
 import { parseLeadData } from '@/ai/flows/parse-lead-data';
-import { addLead, updateLead, deleteLead } from '@/lib/data';
+import { addLead, updateLead, deleteLead, getLeads } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
+import { jsonToCsv } from '@/lib/csv';
 
 const LeadFormSchema = z.object({
   id: z.string().optional(),
@@ -105,3 +106,22 @@ export async function deleteLeadAction(leadId: string) {
         return { success: false, error: 'An unexpected error occurred while deleting the lead.' };
     }
 }
+
+
+export async function exportAllDataAction() {
+    try {
+      const leads = await getLeads();
+  
+      if (leads.length === 0) {
+        return { success: true, csv: '' };
+      }
+      
+      // We can add more data sources here in the future
+      const csv = jsonToCsv(leads);
+  
+      return { success: true, csv };
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      return { success: false, error: 'Failed to export data.' };
+    }
+  }
