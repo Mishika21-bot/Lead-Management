@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, ClipboardList, Package, Archive, Repeat, Workflow, Settings } from 'lucide-react';
+import { Bot, ClipboardList, Package, Archive, Repeat, Workflow, Settings, CheckSquare, CalendarClock } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -19,6 +19,8 @@ const menuItems = [
   { href: '/leads', label: 'All Leads', icon: ClipboardList },
   { href: '/leads/regular', label: 'Regular', icon: Repeat },
   { href: '/leads/negotiation', label: 'Negotiation', icon: Workflow },
+  { href: '/leads/follow-up', label: 'Follow Up', icon: CalendarClock },
+  { href: '/leads/sample-updates', label: 'Sample Updates', icon: CheckSquare },
   { href: '/leads/bin', label: 'Bin', icon: Archive },
 ];
 
@@ -37,15 +39,15 @@ export function MainSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} passHref>
-                <SidebarMenuButton
-                  isActive={pathname === item.href}
-                  tooltip={{ children: item.label, side: 'right' }}
-                >
-                  <item.icon />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </Link>
+                <Link href={item.href}>
+                    <SidebarMenuButton
+                    isActive={pathname === item.href}
+                    tooltip={{ children: item.label, side: 'right' }}
+                    >
+                    <item.icon />
+                    <span>{item.label}</span>
+                    </SidebarMenuButton>
+                </Link>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>

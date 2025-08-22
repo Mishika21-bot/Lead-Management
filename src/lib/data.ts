@@ -63,7 +63,8 @@ let leads: Lead[] = [
         packing: 'Coils',
         marketRate: '620/MT',
         aikyanRate: '590/MT',
-        note: 'Negotiating price.'
+        note: 'Negotiating price.',
+        sampleStatus: 'Sent',
     },
     {
         id: '4',
@@ -85,23 +86,78 @@ let leads: Lead[] = [
         marketRate: '5600/MT',
         aikyanRate: '5450/MT',
         note: 'Price too high.'
+    },
+    {
+        id: '5',
+        leadNo: 'L-005',
+        leadDate: new Date('2024-07-21').toISOString(),
+        leadType: 'Seller',
+        sellerBuyerName: 'Industrial Metals',
+        sellerBuyerContact: '444-555-6666',
+        itemDetails: 'Zinc Ingots',
+        purity: '99.9%',
+        qty: '20 MT',
+        sellerBuyerRate: '3000/MT',
+        frequency: 'Once',
+        status: 'Follow-up needed',
+        lastUpdate: new Date().toISOString(),
+        warehouse: 'OH',
+        sample: 'Required',
+        packing: 'Pallets',
+        marketRate: '3050/MT',
+        aikyanRate: '2980/MT',
+        note: 'Follow up on price.'
+    },
+    {
+        id: '6',
+        leadNo: 'L-006',
+        leadDate: new Date('2024-07-22').toISOString(),
+        leadType: 'Buyer',
+        sellerBuyerName: 'Quality Castings',
+        sellerBuyerContact: '777-888-9999',
+        itemDetails: 'Lead Ingots',
+        purity: '99.97%',
+        qty: '15 MT',
+        sellerBuyerRate: '2200/MT',
+        frequency: 'Once',
+        status: 'Seller to send sample',
+        lastUpdate: new Date().toISOString(),
+        warehouse: 'MI',
+        sample: 'Requested',
+        packing: 'Ingots',
+        marketRate: '2250/MT',
+        aikyanRate: '2180/MT',
+        note: 'Awaiting sample from seller.',
+        sampleStatus: 'Sent'
     }
 ];
 
 // Simulate network delay
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-export async function getLeads(filter?: { status?: LeadStatus, isRegular?: boolean }): Promise<Lead[]> {
+export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], isRegular?: boolean, needsFollowUp?: boolean, needsSampleUpdate?: boolean }): Promise<Lead[]> {
   await delay(500);
   let filteredLeads = leads;
 
   if (filter?.status) {
-    filteredLeads = filteredLeads.filter(lead => lead.status === filter.status);
+    if(Array.isArray(filter.status)) {
+        filteredLeads = filteredLeads.filter(lead => filter.status?.includes(lead.status));
+    } else {
+        filteredLeads = filteredLeads.filter(lead => lead.status === filter.status);
+    }
   }
   
   if (filter?.isRegular) {
     const regularFrequencies = ["WEEKLY", "MONTHLY", "1-2 M"];
     filteredLeads = filteredLeads.filter(lead => regularFrequencies.includes(lead.frequency || ''));
+  }
+
+  if (filter?.needsFollowUp) {
+    filteredLeads = filteredLeads.filter(lead => lead.status === 'Follow-up needed');
+  }
+
+  if (filter?.needsSampleUpdate) {
+    filteredLeads = filteredLeads.filter(lead => lead.status === 'Seller to send sample');
   }
 
   return [...filteredLeads].sort((a, b) => new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime());
