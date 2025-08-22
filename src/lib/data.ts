@@ -1,17 +1,13 @@
 
 import { collection, getDocs, addDoc, query, where, getCountFromServer, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Lead, LeadStatus, Rate, PhonebookEntry } from "./types";
+import type { Lead, LeadStatus } from "./types";
 
 // In-memory data as a fallback
 let inMemoryLeads: Lead[] = [];
-let inMemoryRates: Rate[] = [];
-let inMemoryPhonebook: PhonebookEntry[] = [];
 let isFirestoreDisabled = false;
 
 const leadsCollection = collection(db, 'leads');
-const ratesCollection = collection(db, 'rates');
-const phonebookCollection = collection(db, 'phonebook');
 
 function handleFirestoreError(error: any, context: string) {
     console.error(`Error in ${context}:`, error);
@@ -29,36 +25,29 @@ function handleFirestoreError(error: any, context: string) {
 export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], isRegular?: boolean, needsFollowUp?: boolean, needsSampleUpdate?: boolean }): Promise<Lead[]> {
   if (isFirestoreDisabled) {
     // Basic filtering for in-memory data
-    return inMemoryLeads.filter(lead => {
+    const leads = inMemoryLeads.filter(lead => {
         if (filter?.status && !((Array.isArray(filter.status) && filter.status.includes(lead.status)) || lead.status === filter.status)) return false;
         if (filter?.isRegular && !["WEEKLY", "MONTHLY", "1-2 M"].includes(lead.frequency || '')) return false;
         if (filter?.needsFollowUp && lead.status !== 'Follow-up needed') return false;
         if (filter?.needsSampleUpdate && lead.status !== 'Seller to send sample') return false;
         return true;
-    }).sort((a, b) => new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime());
+    });
+    return leads.sort((a, b) => new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime());
   }
   try {
     const conditions: any[] = [];
-
     if (filter?.status) {
-      if(Array.isArray(filter.status)) {
-          conditions.push(where('status', 'in', filter.status));
-      } else {
-          conditions.push(where('status', '==', filter.status));
-      }
+      const statusFilter = Array.isArray(filter.status) ? where('status', 'in', filter.status) : where('status', '==', filter.status);
+      conditions.push(statusFilter);
     }
-    
     if (filter?.isRegular) {
-      const regularFrequencies = ["WEEKLY", "MONTHLY", "1-2 M"];
-      conditions.push(where('frequency', 'in', regularFrequencies));
+      conditions.push(where('frequency', 'in', ["WEEKLY", "MONTHLY", "1-2 M"]));
     }
-
     if (filter?.needsFollowUp) {
       conditions.push(where('status', '==', 'Follow-up needed'));
     }
-
     if (filter?.needsSampleUpdate) {
-      conditions.push(where('status', '==', 'Seller to send sample'));
+        conditions.push(where('status', '==', 'Seller to send sample'));
     }
     
     const q = conditions.length > 0 ? query(leadsCollection, ...conditions) : query(leadsCollection);
@@ -66,7 +55,7 @@ export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], is
     const querySnapshot = await getDocs(q);
     const leads = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
     
-    // Sort in memory after fetching
+    // Sort in memory after fetching, as Firestore requires an index for this.
     return leads.sort((a, b) => new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime());
   } catch (error) {
     handleFirestoreError(error, 'getLeads');
@@ -87,30 +76,10 @@ export async function addLead(leadData: Omit<Lead, 'id' | 'leadNo' | 'lastUpdate
     if (isFirestoreDisabled) {
         const leadWithId = { ...newLeadData, id: `mem-${Date.now()}` } as Lead;
         inMemoryLeads.push(leadWithId);
-        if (newLeadData.sellerBuyerName && newLeadData.sellerBuyerContact) {
-            addPhonebookEntry({
-                name: newLeadData.sellerBuyerName,
-                contact: newLeadData.sellerBuyerContact,
-                company: newLeadData.sellerBuyerName,
-            })
-        }
         return leadWithId;
     }
     try {
         const docRef = await addDoc(leadsCollection, newLeadData);
-        
-        if (newLeadData.sellerBuyerName && newLeadData.sellerBuyerContact) {
-            const phonebookQuery = query(phonebookCollection, where('contact', '==', newLeadData.sellerBuyerContact));
-            const phonebookSnapshot = await getDocs(phonebookQuery);
-            if(phonebookSnapshot.empty) {
-                addPhonebookEntry({
-                    name: newLeadData.sellerBuyerName,
-                    contact: newLeadData.sellerBuyerContact,
-                    company: newLeadData.sellerBuyerName,
-                })
-            }
-        }
-
         return { id: docRef.id, ...newLeadData } as Lead;
     } catch (error) {
         handleFirestoreError(error, 'addLead');
@@ -216,45 +185,3 @@ export async function getLeadsByType() {
         return getLeadsByType();
     }
 }
-
-// Rates functions
-export async function getRates(): Promise<Rate[]> {
-    if(isFirestoreDisabled) return inMemoryRates;
-    try {
-        const querySnapshot = await getDocs(ratesCollection);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Rate));
-    } catch (error) {
-        handleFirestoreError(error, 'getRates');
-        return getRates();
-    }
-}
-
-// Phonebook functions
-export async function getPhonebookEntries(): Promise<PhonebookEntry[]> {
-    if(isFirestoreDisabled) return inMemoryPhonebook;
-    try {
-        const querySnapshot = await getDocs(phonebookCollection);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PhonebookEntry));
-    } catch (error) {
-        handleFirestoreError(error, 'getPhonebookEntries');
-        return getPhonebookEntries();
-    }
-}
-
-export async function addPhonebookEntry(entry: Omit<PhonebookEntry, 'id'>): Promise<PhonebookEntry> {
-    if(isFirestoreDisabled) {
-        const newEntry = { ...entry, id: `mem-pb-${Date.now()}`};
-        inMemoryPhonebook.push(newEntry);
-        return newEntry;
-    }
-    try {
-        const docRef = await addDoc(phonebookCollection, entry);
-        return { id: docRef.id, ...entry };
-    } catch(error) {
-        handleFirestoreError(error, 'addPhonebookEntry');
-        const newEntry = { ...entry, id: `mem-pb-${Date.now()}`};
-        inMemoryPhonebook.push(newEntry);
-        return newEntry;
-    }
-}
-    
