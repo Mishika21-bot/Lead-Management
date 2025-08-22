@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Lead } from "@/lib/types";
+import { useLeadsTable } from "./leads-table-context";
 
 const WhatsAppIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
@@ -18,6 +19,7 @@ const WhatsAppIcon = () => (
 
 export function LeadsTableRowActions({ lead }: { lead: Lead }) {
     const contact = lead.sellerBuyerContact?.replace(/[^0-9]/g, '');
+    const { onEdit, onDelete } = useLeadsTable();
 
   return (
     <DropdownMenu>
@@ -29,6 +31,15 @@ export function LeadsTableRowActions({ lead }: { lead: Lead }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => onEdit(lead)}>
+          <Pencil />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem className="text-destructive" onClick={() => onDelete(lead)}>
+          <Trash2 />
+          Delete
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <a href={`https://wa.me/${contact}`} target="_blank" rel="noopener noreferrer">
             <WhatsAppIcon />
@@ -46,15 +57,6 @@ export function LeadsTableRowActions({ lead }: { lead: Lead }) {
             <Phone />
             Call
           </a>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <Pencil />
-          Edit
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-destructive">
-          <Trash2 />
-          Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

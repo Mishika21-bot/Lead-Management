@@ -2,12 +2,11 @@
 
 import { z } from 'zod';
 import { parseLeadData } from '@/ai/flows/parse-lead-data';
-import { addLead, getLeads, getPhonebookEntries, getRates } from '@/lib/data';
+import { addLead, updateLead, deleteLead } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
-import { leadColumns, phonebookColumns, rateColumns } from './export/export-columns';
-import { convertDataToCSV } from './export/utils';
 
 const LeadFormSchema = z.object({
+  id: z.string().optional(),
   leadDate: z.string().optional(),
   leadType: z.string().optional(),
   sellerBuyerContact: z.string().optional(),
@@ -23,6 +22,7 @@ const LeadFormSchema = z.object({
   sellerBuyerRate: z.string().optional(),
   aikyanRate: z.string().optional(),
   note: z.string().optional(),
+  status: z.string().optional(),
 });
 
 type LeadFormData = z.infer<typeof LeadFormSchema>;
@@ -42,16 +42,15 @@ export async function parseLeadAction(rawText: string) {
 
 export async function createLeadAction(formData: LeadFormData) {
   try {
-    const validatedData = LeadFormSchema.parse(formData);
+    const { id, ...dataToSave } = LeadFormSchema.parse(formData);
     
     const leadToSave = {
-      ...validatedData,
+      ...dataToSave,
       status: 'New' as const,
     };
 
     const newLead = await addLead(leadToSave);
     
-    // Revalidate paths to update the UI
     revalidatePath('/');
     revalidatePath('/leads');
     
@@ -65,23 +64,44 @@ export async function createLeadAction(formData: LeadFormData) {
   }
 }
 
-export async function exportAllDataAction() {
+export async function updateLeadAction(formData: LeadFormData) {
     try {
-        const leads = await getLeads();
-        const rates = await getRates();
-        const phonebook = await getPhonebookEntries();
+        const validatedData = LeadFormSchema.parse(formData);
+        const { id, ...dataToUpdate } = validatedData;
 
-        const sections = [
-            { title: "LEADS DATA", columns: leadColumns, data: leads },
-            { title: "RATES DATA", columns: rateColumns, data: rates },
-            { title: "PHONEBOOK DATA", columns: phonebookColumns, data: phonebook },
-        ];
+        if (!id) {
+            return { success: false, error: 'Lead ID is missing.' };
+        }
 
-        const csvString = convertDataToCSV(sections);
-        
-        return { success: true, csv: csvString };
+        await updateLead(id, dataToUpdate);
+
+        revalidatePath('/');
+        revalidatePath('/leads', 'layout');
+
+        return { success: true };
     } catch (error) {
-        console.error("Failed to export data:", error);
-        return { success: false, error: "An unexpected error occurred while exporting data." };
+        console.error('Error updating lead:', error);
+        if (error instanceof z.ZodError) {
+            return { success: false, error: 'Validation failed.', issues: error.errors };
+        }
+        return { success: false, error: 'An unexpected error occurred while updating the lead.' };
+    }
+}
+
+export async function deleteLeadAction(leadId: string) {
+    try {
+        if (!leadId) {
+            return { success: false, error: 'Lead ID is missing.' };
+        }
+
+        await deleteLead(leadId);
+
+        revalidatePath('/');
+        revalidatePath('/leads', 'layout');
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting lead:', error);
+        return { success: false, error: 'An unexpected error occurred while deleting the lead.' };
     }
 }

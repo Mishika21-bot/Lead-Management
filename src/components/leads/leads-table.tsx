@@ -1,7 +1,9 @@
+'use client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Lead } from "@/lib/types";
 import { LeadsTableRowActions } from "./leads-table-row-actions";
+import { LeadsTableProvider } from "./leads-table-context";
 
 function format(date: string | undefined | null, options?: Intl.DateTimeFormatOptions) {
   if (!date) return 'N/A';
@@ -13,7 +15,7 @@ function format(date: string | undefined | null, options?: Intl.DateTimeFormatOp
   });
 }
 
-export function LeadsTable({ leads }: { leads: Lead[] }) {
+function LeadsTableComponent({ leads }: { leads: Lead[] }) {
   if (leads.length === 0) {
     return (
         <div className="text-center text-muted-foreground p-8 border rounded-lg">
@@ -62,4 +64,12 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
         </Table>
     </div>
   );
+}
+
+export function LeadsTable({ leads }: { leads: Lead[] }) {
+    return (
+        <LeadsTableProvider>
+            <LeadsTableComponent leads={leads} />
+        </LeadsTableProvider>
+    )
 }

@@ -1,12 +1,12 @@
 
-import { collection, getDocs, addDoc, query, where, getCountFromServer } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where, getCountFromServer, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Lead, LeadStatus, Rate, PhonebookEntry } from "./types";
 
 // In-memory data as a fallback
-const inMemoryLeads: Lead[] = [];
-const inMemoryRates: Rate[] = [];
-const inMemoryPhonebook: PhonebookEntry[] = [];
+let inMemoryLeads: Lead[] = [];
+let inMemoryRates: Rate[] = [];
+let inMemoryPhonebook: PhonebookEntry[] = [];
 let isFirestoreDisabled = false;
 
 const leadsCollection = collection(db, 'leads');
@@ -120,6 +120,43 @@ export async function addLead(leadData: Omit<Lead, 'id' | 'leadNo' | 'lastUpdate
         return leadWithId;
     }
 }
+
+export async function updateLead(leadId: string, leadData: Partial<Lead>): Promise<Lead> {
+    const lastUpdate = new Date().toISOString();
+    const updatedData = { ...leadData, lastUpdate };
+
+    if (isFirestoreDisabled) {
+        const index = inMemoryLeads.findIndex(l => l.id === leadId);
+        if (index > -1) {
+            inMemoryLeads[index] = { ...inMemoryLeads[index], ...updatedData };
+            return inMemoryLeads[index];
+        }
+        throw new Error("Lead not found in memory");
+    }
+    try {
+        const leadRef = doc(db, 'leads', leadId);
+        await updateDoc(leadRef, updatedData);
+        return { id: leadId, ...updatedData } as Lead;
+    } catch (error) {
+        handleFirestoreError(error, 'updateLead');
+        throw new Error("Failed to update lead in Firestore");
+    }
+}
+
+export async function deleteLead(leadId: string): Promise<void> {
+    if (isFirestoreDisabled) {
+        inMemoryLeads = inMemoryLeads.filter(l => l.id !== leadId);
+        return;
+    }
+    try {
+        const leadRef = doc(db, 'leads', leadId);
+        await deleteDoc(leadRef);
+    } catch (error) {
+        handleFirestoreError(error, 'deleteLead');
+        throw new Error("Failed to delete lead in Firestore");
+    }
+}
+
 
 export async function getLeadStats() {
     if (isFirestoreDisabled) {
