@@ -1,4 +1,4 @@
-import { Lead, LeadStatus } from "./types";
+import { Lead, LeadStatus, Rate, PhonebookEntry } from "./types";
 
 // In-memory store for leads
 let leads: Lead[] = [
@@ -132,6 +132,18 @@ let leads: Lead[] = [
     }
 ];
 
+let rates: Rate[] = [
+    { id: '1', item: 'Copper Scrap', type: 'Scrap', packing: 'Loose', marketRate: '8100/MT', rateChange: '+50', vendorName: 'Global Metals', vendorRate: '8050/MT', transport: '50/MT', aikyanRate: '7950/MT' },
+    { id: '2', item: 'Aluminum Ingots', type: 'Ingot', packing: 'Bundles', marketRate: '2550/MT', rateChange: '-20', vendorName: 'Alloy Inc.', vendorRate: '2520/MT', transport: '30/MT', aikyanRate: '2480/MT' },
+];
+
+let phonebook: PhonebookEntry[] = [
+    { id: '1', name: 'John Doe', contact: '123-456-7890', company: 'Global Metals' },
+    { id: '2', name: 'Jane Smith', contact: '987-654-3210', company: 'Alloy Inc.' },
+    { id: '3', name: 'Scrap Kings Inc.', contact: '555-555-5555', company: 'Scrap Kings Inc.' },
+];
+
+
 // Simulate network delay
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
@@ -172,6 +184,14 @@ export async function addLead(leadData: Omit<Lead, 'id' | 'leadNo' | 'lastUpdate
     lastUpdate: new Date().toISOString(),
   };
   leads.unshift(newLead);
+  // Also add to phonebook if not already there
+  if (newLead.sellerBuyerName && newLead.sellerBuyerContact && !phonebook.some(p => p.contact === newLead.sellerBuyerContact)) {
+    addPhonebookEntry({
+        name: newLead.sellerBuyerName,
+        contact: newLead.sellerBuyerContact,
+        company: newLead.sellerBuyerName,
+    })
+  }
   return newLead;
 }
 
@@ -195,4 +215,26 @@ export async function getLeadsByType() {
         { name: 'Sellers', value: seller, fill: 'hsl(var(--chart-2))' },
         { name: 'Other', value: other, fill: 'hsl(var(--chart-5))' },
     ];
+}
+
+// Rates functions
+export async function getRates(): Promise<Rate[]> {
+    await delay(300);
+    return [...rates];
+}
+
+// Phonebook functions
+export async function getPhonebookEntries(): Promise<PhonebookEntry[]> {
+    await delay(300);
+    return [...phonebook];
+}
+
+export async function addPhonebookEntry(entry: Omit<PhonebookEntry, 'id'>): Promise<PhonebookEntry> {
+    await delay(300);
+    const newEntry: PhonebookEntry = {
+        ...entry,
+        id: (phonebook.length + 1).toString(),
+    };
+    phonebook.push(newEntry);
+    return newEntry;
 }

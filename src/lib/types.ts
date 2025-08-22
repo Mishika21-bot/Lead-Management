@@ -10,4 +10,26 @@ export interface Lead extends ParseLeadDataOutput {
   status: LeadStatus;
   lastUpdate: string;
   sampleStatus?: SampleStatus;
+  gcImage?: string;
+  clipboard?: string;
+}
+
+export interface Rate {
+    id: string;
+    item: string;
+    type: string;
+    packing: string;
+    marketRate: string;
+    rateChange: string;
+    vendorName: string;
+    vendorRate: string;
+    transport: string;
+    aikyanRate: string;
+}
+  
+export interface PhonebookEntry {
+    id: string;
+    name: string;
+    contact: string;
+    company: string;
 }
