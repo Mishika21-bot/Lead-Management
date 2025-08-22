@@ -3,14 +3,14 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
-// IMPORTANT: This object is generated automatically and should not be modified.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  "projectId": "leadflow-ze79n",
+  "appId": "1:369234901417:web:d5606b49c8324accd86cb8",
+  "storageBucket": "leadflow-ze79n.firebasestorage.app",
+  "apiKey": "AIzaSyCLmvu3l55uefZPUc4rXJEtn6gSDjv1rH4",
+  "authDomain": "leadflow-ze79n.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "369234901417"
 };
 
 // Initialize Firebase
