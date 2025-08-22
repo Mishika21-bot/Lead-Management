@@ -4,8 +4,6 @@ import { CheckSquare } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Lead } from "@/lib/types";
-import { ExportButton } from "@/components/ui/export-button";
-import { leadColumns } from "@/lib/export-columns";
 
 export const dynamic = 'force-dynamic';
 
@@ -80,7 +78,6 @@ export default async function SampleUpdatesPage() {
                 Track the status of samples sent to or received from leads.
             </p>
         </div>
-        <ExportButton data={leads} columns={leadColumns} filename="sample_updates.csv" />
       </header>
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
         <Card>

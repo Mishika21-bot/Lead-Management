@@ -2,8 +2,10 @@
 
 import { z } from 'zod';
 import { parseLeadData } from '@/ai/flows/parse-lead-data';
-import { addLead } from '@/lib/data';
+import { addLead, getLeads, getPhonebookEntries, getRates } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
+import { leadColumns, phonebookColumns, rateColumns } from './export/export-columns';
+import { convertDataToCSV } from './export/utils';
 
 const LeadFormSchema = z.object({
   leadDate: z.string().optional(),
@@ -61,4 +63,25 @@ export async function createLeadAction(formData: LeadFormData) {
     }
     return { success: false, error: 'An unexpected error occurred.' };
   }
+}
+
+export async function exportAllDataAction() {
+    try {
+        const leads = await getLeads();
+        const rates = await getRates();
+        const phonebook = await getPhonebookEntries();
+
+        const sections = [
+            { title: "LEADS DATA", columns: leadColumns, data: leads },
+            { title: "RATES DATA", columns: rateColumns, data: rates },
+            { title: "PHONEBOOK DATA", columns: phonebookColumns, data: phonebook },
+        ];
+
+        const csvString = convertDataToCSV(sections);
+        
+        return { success: true, csv: csvString };
+    } catch (error) {
+        console.error("Failed to export data:", error);
+        return { success: false, error: "An unexpected error occurred while exporting data." };
+    }
 }

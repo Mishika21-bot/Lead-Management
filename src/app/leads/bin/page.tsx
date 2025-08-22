@@ -2,8 +2,6 @@ import { getLeads } from "@/lib/data";
 import { LeadsTable } from "@/components/leads/leads-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Archive } from "lucide-react";
-import { ExportButton } from "@/components/ui/export-button";
-import { leadColumns } from "@/lib/export-columns";
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +20,6 @@ export default async function BinPage() {
                 Leads that have been marked as 'Dead' or archived.
             </p>
         </div>
-        <ExportButton data={leads} columns={leadColumns} filename="archived_leads.csv" />
       </header>
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
         <Card>

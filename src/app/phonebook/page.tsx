@@ -3,8 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Contact } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { PhonebookEntry } from "@/lib/types";
-import { ExportButton } from "@/components/ui/export-button";
-import { phonebookColumns } from "@/lib/export-columns";
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +54,6 @@ export default async function PhonebookPage() {
                 A central directory of all your business contacts.
             </p>
         </div>
-        <ExportButton data={entries} columns={phonebookColumns} filename="phonebook.csv" />
       </header>
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
         <Card>
