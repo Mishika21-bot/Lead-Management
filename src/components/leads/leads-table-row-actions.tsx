@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreHorizontal, Phone, MessageSquareText, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Phone, MessageSquareText, Pencil, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,7 +19,7 @@ const WhatsAppIcon = () => (
 
 export function LeadsTableRowActions({ lead }: { lead: Lead }) {
     const contact = lead.sellerBuyerContact?.replace(/[^0-9]/g, '');
-    const { onEdit, onDelete } = useLeadsTable();
+    const { onEdit, onDelete, onView } = useLeadsTable();
 
   return (
     <DropdownMenu>
@@ -31,6 +31,10 @@ export function LeadsTableRowActions({ lead }: { lead: Lead }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => onView(lead)}>
+          <Eye />
+          View
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onEdit(lead)}>
           <Pencil />
           Edit

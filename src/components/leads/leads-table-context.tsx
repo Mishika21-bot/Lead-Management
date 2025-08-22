@@ -4,8 +4,10 @@ import { createContext, useContext, useState, useCallback } from 'react';
 import type { Lead } from '@/lib/types';
 import { EditLeadDialog } from './edit-lead-dialog';
 import { DeleteLeadAlert } from './delete-lead-alert';
+import { ViewLeadDialog } from './view-lead-dialog';
 
 type LeadsTableContextType = {
+  onView: (lead: Lead) => void;
   onEdit: (lead: Lead) => void;
   onDelete: (lead: Lead) => void;
 };
@@ -21,8 +23,13 @@ export const useLeadsTable = () => {
 };
 
 export const LeadsTableProvider = ({ children }: { children: React.ReactNode }) => {
+  const [viewingLead, setViewingLead] = useState<Lead | null>(null);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [deletingLead, setDeletingLead] = useState<Lead | null>(null);
+
+  const handleView = useCallback((lead: Lead) => {
+    setViewingLead(lead);
+  }, []);
 
   const handleEdit = useCallback((lead: Lead) => {
     setEditingLead(lead);
@@ -32,7 +39,11 @@ export const LeadsTableProvider = ({ children }: { children: React.ReactNode }) 
     setDeletingLead(lead);
   }, []);
 
-  const handleCloseDialog = useCallback(() => {
+  const handleCloseViewDialog = useCallback(() => {
+    setViewingLead(null);
+  }, []);
+
+  const handleCloseEditDialog = useCallback(() => {
     setEditingLead(null);
   }, []);
   
@@ -42,12 +53,17 @@ export const LeadsTableProvider = ({ children }: { children: React.ReactNode }) 
 
 
   return (
-    <LeadsTableContext.Provider value={{ onEdit: handleEdit, onDelete: handleDelete }}>
+    <LeadsTableContext.Provider value={{ onView: handleView, onEdit: handleEdit, onDelete: handleDelete }}>
       {children}
+      <ViewLeadDialog
+        lead={viewingLead}
+        isOpen={!!viewingLead}
+        onClose={handleCloseViewDialog}
+      />
       <EditLeadDialog
         lead={editingLead}
         isOpen={!!editingLead}
-        onClose={handleCloseDialog}
+        onClose={handleCloseEditDialog}
       />
       <DeleteLeadAlert
         lead={deletingLead}
