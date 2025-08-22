@@ -1,214 +1,98 @@
-import { Lead, LeadStatus, Rate, PhonebookEntry } from "./types";
+import { collection, getDocs, addDoc, query, where, getCountFromServer, orderBy } from 'firebase/firestore';
+import { db } from './firebase';
+import type { Lead, LeadStatus, Rate, PhonebookEntry } from "./types";
 
-// In-memory store for leads
-let leads: Lead[] = [
-    {
-        id: '1',
-        leadNo: 'L-001',
-        leadDate: new Date('2024-07-20').toISOString(),
-        leadType: 'Seller',
-        sellerBuyerName: 'John Doe',
-        sellerBuyerContact: '123-456-7890',
-        itemDetails: 'Copper Scrap',
-        purity: '99%',
-        qty: '10 MT',
-        sellerBuyerRate: '8000/MT',
-        frequency: 'WEEKLY',
-        status: 'Regular',
-        lastUpdate: new Date().toISOString(),
-        warehouse: 'NY',
-        sample: 'Available',
-        packing: 'Loose',
-        marketRate: '8100/MT',
-        aikyanRate: '7950/MT',
-        note: 'Initial contact made.'
-    },
-    {
-        id: '2',
-        leadNo: 'L-002',
-        leadDate: new Date('2024-07-18').toISOString(),
-        leadType: 'Buyer',
-        sellerBuyerName: 'Jane Smith',
-        sellerBuyerContact: '987-654-3210',
-        itemDetails: 'Aluminum Ingots',
-        purity: '99.7%',
-        qty: '25 MT',
-        sellerBuyerRate: '2500/MT',
-        frequency: 'MONTHLY',
-        status: 'Regular',
-        lastUpdate: new Date().toISOString(),
-        warehouse: 'CA',
-        sample: 'Not Required',
-        packing: 'Bundles',
-        marketRate: '2550/MT',
-        aikyanRate: '2480/MT',
-        note: 'Ready to purchase.'
-    },
-    {
-        id: '3',
-        leadNo: 'L-003',
-        leadDate: new Date('2024-07-15').toISOString(),
-        leadType: 'Seller',
-        sellerBuyerName: 'Scrap Kings Inc.',
-        sellerBuyerContact: '555-555-5555',
-        itemDetails: 'Steel Coils',
-        purity: 'Grade A',
-        qty: '50 MT',
-        sellerBuyerRate: '600/MT',
-        frequency: 'Once',
-        status: 'Negotiation',
-        lastUpdate: new Date().toISOString(),
-        warehouse: 'TX',
-        sample: 'Sent',
-        packing: 'Coils',
-        marketRate: '620/MT',
-        aikyanRate: '590/MT',
-        note: 'Negotiating price.',
-        sampleStatus: 'Sent',
-    },
-    {
-        id: '4',
-        leadNo: 'L-004',
-        leadDate: new Date('2024-07-12').toISOString(),
-        leadType: 'Buyer',
-        sellerBuyerName: 'MetalWorks',
-        sellerBuyerContact: '111-222-3333',
-        itemDetails: 'Brass Rods',
-        purity: 'C360',
-        qty: '5 MT',
-        sellerBuyerRate: '5500/MT',
-        frequency: 'Once',
-        status: 'Dead',
-        lastUpdate: new Date().toISOString(),
-        warehouse: 'FL',
-        sample: 'Rejected',
-        packing: 'Crates',
-        marketRate: '5600/MT',
-        aikyanRate: '5450/MT',
-        note: 'Price too high.'
-    },
-    {
-        id: '5',
-        leadNo: 'L-005',
-        leadDate: new Date('2024-07-21').toISOString(),
-        leadType: 'Seller',
-        sellerBuyerName: 'Industrial Metals',
-        sellerBuyerContact: '444-555-6666',
-        itemDetails: 'Zinc Ingots',
-        purity: '99.9%',
-        qty: '20 MT',
-        sellerBuyerRate: '3000/MT',
-        frequency: 'Once',
-        status: 'Follow-up needed',
-        lastUpdate: new Date().toISOString(),
-        warehouse: 'OH',
-        sample: 'Required',
-        packing: 'Pallets',
-        marketRate: '3050/MT',
-        aikyanRate: '2980/MT',
-        note: 'Follow up on price.'
-    },
-    {
-        id: '6',
-        leadNo: 'L-006',
-        leadDate: new Date('2024-07-22').toISOString(),
-        leadType: 'Buyer',
-        sellerBuyerName: 'Quality Castings',
-        sellerBuyerContact: '777-888-9999',
-        itemDetails: 'Lead Ingots',
-        purity: '99.97%',
-        qty: '15 MT',
-        sellerBuyerRate: '2200/MT',
-        frequency: 'Once',
-        status: 'Seller to send sample',
-        lastUpdate: new Date().toISOString(),
-        warehouse: 'MI',
-        sample: 'Requested',
-        packing: 'Ingots',
-        marketRate: '2250/MT',
-        aikyanRate: '2180/MT',
-        note: 'Awaiting sample from seller.',
-        sampleStatus: 'Sent'
-    }
-];
+const leadsCollection = collection(db, 'leads');
+const ratesCollection = collection(db, 'rates');
+const phonebookCollection = collection(db, 'phonebook');
 
-let rates: Rate[] = [
-    { id: '1', item: 'Copper Scrap', type: 'Scrap', packing: 'Loose', marketRate: '8100/MT', rateChange: '+50', vendorName: 'Global Metals', vendorRate: '8050/MT', transport: '50/MT', aikyanRate: '7950/MT' },
-    { id: '2', item: 'Aluminum Ingots', type: 'Ingot', packing: 'Bundles', marketRate: '2550/MT', rateChange: '-20', vendorName: 'Alloy Inc.', vendorRate: '2520/MT', transport: '30/MT', aikyanRate: '2480/MT' },
-];
-
-let phonebook: PhonebookEntry[] = [
-    { id: '1', name: 'John Doe', contact: '123-456-7890', company: 'Global Metals' },
-    { id: '2', name: 'Jane Smith', contact: '987-654-3210', company: 'Alloy Inc.' },
-    { id: '3', name: 'Scrap Kings Inc.', contact: '555-555-5555', company: 'Scrap Kings Inc.' },
-];
-
-
-// Simulate network delay
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export async function getLeads(filter?: { status?: LeadStatus | LeadStatus[], isRegular?: boolean, needsFollowUp?: boolean, needsSampleUpdate?: boolean }): Promise<Lead[]> {
-  await delay(500);
-  let filteredLeads = leads;
+  let q = query(leadsCollection, orderBy('lastUpdate', 'desc'));
+  
+  const conditions: any[] = [];
 
   if (filter?.status) {
     if(Array.isArray(filter.status)) {
-        filteredLeads = filteredLeads.filter(lead => filter.status?.includes(lead.status));
+        conditions.push(where('status', 'in', filter.status));
     } else {
-        filteredLeads = filteredLeads.filter(lead => lead.status === filter.status);
+        conditions.push(where('status', '==', filter.status));
     }
   }
   
   if (filter?.isRegular) {
     const regularFrequencies = ["WEEKLY", "MONTHLY", "1-2 M"];
-    filteredLeads = filteredLeads.filter(lead => regularFrequencies.includes(lead.frequency || ''));
+    conditions.push(where('frequency', 'in', regularFrequencies));
   }
 
   if (filter?.needsFollowUp) {
-    filteredLeads = filteredLeads.filter(lead => lead.status === 'Follow-up needed');
+    conditions.push(where('status', '==', 'Follow-up needed'));
   }
 
   if (filter?.needsSampleUpdate) {
-    filteredLeads = filteredLeads.filter(lead => lead.status === 'Seller to send sample');
+    conditions.push(where('status', '==', 'Seller to send sample'));
+  }
+  
+  if(conditions.length > 0) {
+    q = query(leadsCollection, ...conditions, orderBy('lastUpdate', 'desc'));
   }
 
-  return [...filteredLeads].sort((a, b) => new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime());
+  const querySnapshot = await getDocs(q);
+  const leads = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+  return leads;
 }
 
 export async function addLead(leadData: Omit<Lead, 'id' | 'leadNo' | 'lastUpdate'>): Promise<Lead> {
-  await delay(500);
-  const newLead: Lead = {
+  const countSnapshot = await getCountFromServer(leadsCollection);
+  const leadCount = countSnapshot.data().count;
+
+  const newLeadData = {
     ...leadData,
-    id: (leads.length + 1).toString(),
-    leadNo: `L-${(leads.length + 1).toString().padStart(3, '0')}`,
+    leadNo: `L-${(leadCount + 1).toString().padStart(3, '0')}`,
     lastUpdate: new Date().toISOString(),
   };
-  leads.unshift(newLead);
+
+  const docRef = await addDoc(leadsCollection, newLeadData);
+  
   // Also add to phonebook if not already there
-  if (newLead.sellerBuyerName && newLead.sellerBuyerContact && !phonebook.some(p => p.contact === newLead.sellerBuyerContact)) {
-    addPhonebookEntry({
-        name: newLead.sellerBuyerName,
-        contact: newLead.sellerBuyerContact,
-        company: newLead.sellerBuyerName,
-    })
+  if (newLeadData.sellerBuyerName && newLeadData.sellerBuyerContact) {
+      const phonebookQuery = query(phonebookCollection, where('contact', '==', newLeadData.sellerBuyerContact));
+      const phonebookSnapshot = await getDocs(phonebookQuery);
+      if(phonebookSnapshot.empty) {
+        addPhonebookEntry({
+            name: newLeadData.sellerBuyerName,
+            contact: newLeadData.sellerBuyerContact,
+            company: newLeadData.sellerBuyerName,
+        })
+      }
   }
-  return newLead;
+
+  return { id: docRef.id, ...newLeadData } as Lead;
 }
 
 export async function getLeadStats() {
-    await delay(300);
-    const total = leads.length;
-    const negotiation = leads.filter(l => l.status === 'Negotiation').length;
-    const dead = leads.filter(l => l.status === 'Dead').length;
-    const regular = leads.filter(l => ["WEEKLY", "MONTHLY", "1-2 M"].includes(l.frequency || '')).length;
-    return { total, negotiation, regular, dead };
+    const totalSnapshot = await getCountFromServer(leadsCollection);
+    const negotiationSnapshot = await getCountFromServer(query(leadsCollection, where('status', '==', 'Negotiation')));
+    const deadSnapshot = await getCountFromServer(query(leadsCollection, where('status', '==', 'Dead')));
+    const regularSnapshot = await getCountFromServer(query(leadsCollection, where('frequency', 'in', ["WEEKLY", "MONTHLY", "1-2 M"])));
+    
+    return { 
+        total: totalSnapshot.data().count, 
+        negotiation: negotiationSnapshot.data().count, 
+        regular: regularSnapshot.data().count, 
+        dead: deadSnapshot.data().count 
+    };
 }
 
 export async function getLeadsByType() {
-    await delay(300);
-    const buyer = leads.filter(l => l.leadType === 'Buyer').length;
-    const seller = leads.filter(l => l.leadType === 'Seller').length;
-    const other = leads.length - buyer - seller;
+    const buyerSnapshot = await getCountFromServer(query(leadsCollection, where('leadType', '==', 'Buyer')));
+    const sellerSnapshot = await getCountFromServer(query(leadsCollection, where('leadType', '==', 'Seller')));
+    const totalSnapshot = await getCountFromServer(leadsCollection);
+    
+    const buyer = buyerSnapshot.data().count;
+    const seller = sellerSnapshot.data().count;
+    const total = totalSnapshot.data().count;
+    const other = total - buyer - seller;
     
     return [
         { name: 'Buyers', value: buyer, fill: 'hsl(var(--chart-1))' },
@@ -219,22 +103,17 @@ export async function getLeadsByType() {
 
 // Rates functions
 export async function getRates(): Promise<Rate[]> {
-    await delay(300);
-    return [...rates];
+    const querySnapshot = await getDocs(ratesCollection);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Rate));
 }
 
 // Phonebook functions
 export async function getPhonebookEntries(): Promise<PhonebookEntry[]> {
-    await delay(300);
-    return [...phonebook];
+    const querySnapshot = await getDocs(phonebookCollection);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PhonebookEntry));
 }
 
 export async function addPhonebookEntry(entry: Omit<PhonebookEntry, 'id'>): Promise<PhonebookEntry> {
-    await delay(300);
-    const newEntry: PhonebookEntry = {
-        ...entry,
-        id: (phonebook.length + 1).toString(),
-    };
-    phonebook.push(newEntry);
-    return newEntry;
+    const docRef = await addDoc(phonebookCollection, entry);
+    return { id: docRef.id, ...entry };
 }
