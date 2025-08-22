@@ -25,7 +25,7 @@ export default function RootLayout({
           rel="stylesheet"
         ></link>
       </head>
-      <body className={cn('font-body antialiased')}>
+      <body className={cn('font-body antialiased')} suppressHydrationWarning>
         <SidebarProvider>
           <div className="flex min-h-screen">
             <MainSidebar />
