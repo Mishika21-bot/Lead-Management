@@ -24,6 +24,7 @@ const menuItems = [
   { href: '/rates', label: 'Rates', icon: DollarSign },
   { href: '/phonebook', label: 'Phonebook', icon: Contact },
   { href: '/leads/bin', label: 'Bin', icon: Archive },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function MainSidebar() {
