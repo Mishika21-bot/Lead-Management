@@ -1,0 +1,17 @@
+# Standard Netlify configuration for a Next.js application
+
+[build]
+  # This command tells Netlify how to build your site.
+  command = "next build"
+  
+  # This is the directory where the built site files are located.
+  publish = ".next"
+
+[build.environment]
+  # Disable telemetry for a cleaner build log.
+  NEXT_TELEMETRY_DISABLED = "1"
+
+[[plugins]]
+  # This essential plugin automatically configures Netlify to handle 
+  # Next.js features like server-side rendering, API routes, and image optimization.
+  package = "@netlify/plugin-nextjs"
